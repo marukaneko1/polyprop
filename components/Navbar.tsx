@@ -53,7 +53,6 @@ export function Navbar() {
                 width={140}
                 height={32}
                 className="h-7 lg:h-8 w-auto"
-                style={{ width: 'auto', height: '100%' }}
                 priority
               />
             </a>

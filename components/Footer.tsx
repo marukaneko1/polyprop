@@ -16,7 +16,6 @@ export function Footer() {
               width={120}
               height={28}
               className="h-7 w-auto mb-4"
-              style={{ width: 'auto', height: '100%' }}
             />
             <p className="text-body-sm text-text-muted max-w-xs">
               The premier prop firm for prediction market traders. 
