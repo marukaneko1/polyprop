@@ -1,5 +1,4 @@
 import {
-  AnnouncementBar,
   Navbar,
   Hero,
   TrustBadges,
@@ -19,9 +18,6 @@ import {
 export default function Home() {
   return (
     <>
-      {/* Announcement Bar */}
-      <AnnouncementBar />
-
       {/* Navigation */}
       <Navbar />
 
