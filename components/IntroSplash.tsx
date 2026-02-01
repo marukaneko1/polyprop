@@ -5,7 +5,7 @@ import { IntroLogoAnimation } from './IntroLogoAnimation'
 import { useIntroOnce } from '@/hooks/useIntroOnce'
 
 // Set to false to disable intro animation
-const INTRO_ENABLED = false
+const INTRO_ENABLED = true
 
 export function IntroSplash() {
   const { shouldPlay, isChecking } = useIntroOnce()
