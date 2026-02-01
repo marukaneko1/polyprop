@@ -2,36 +2,57 @@
 
 import { useState, useEffect } from 'react'
 import { IntroLogoAnimation } from './IntroLogoAnimation'
-import { useIntroOnce } from '@/hooks/useIntroOnce'
 
-// Set to false to disable intro animation
+// Set to false to disable intro animation entirely
 const INTRO_ENABLED = true
 
+// Set to true to play only once per session, false to play on every page load
+const PLAY_ONCE_PER_SESSION = false
+
+const STORAGE_KEY = 'polyprop_intro_played'
+
 export function IntroSplash() {
-  const { shouldPlay, isChecking } = useIntroOnce()
-  const [showAnimation, setShowAnimation] = useState(false)
+  const [showIntro, setShowIntro] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    if (INTRO_ENABLED && !isChecking && shouldPlay) {
-      setShowAnimation(true)
+    setMounted(true)
+
+    if (!INTRO_ENABLED) {
+      return
     }
-  }, [isChecking, shouldPlay])
+
+    // Check if we should play
+    if (PLAY_ONCE_PER_SESSION) {
+      const hasPlayed = sessionStorage.getItem(STORAGE_KEY) === 'true'
+      if (hasPlayed) {
+        return
+      }
+      sessionStorage.setItem(STORAGE_KEY, 'true')
+    }
+
+    // Show the intro
+    setShowIntro(true)
+  }, [])
 
   const handleComplete = () => {
-    setShowAnimation(false)
-    // Ensure body overflow is restored
-    document.body.style.overflow = ''
+    setShowIntro(false)
   }
 
-  // Don't render anything if disabled, checking, or not playing
-  if (!INTRO_ENABLED || isChecking || !shouldPlay || !showAnimation) {
+  // Don't render on server or if not mounted yet
+  if (!mounted) {
+    return null
+  }
+
+  // Don't render if intro is disabled or already completed
+  if (!showIntro) {
     return null
   }
 
   return (
     <IntroLogoAnimation
       mode="fullscreen"
-      size={220}
+      size={200}
       durationMs={2000}
       onComplete={handleComplete}
     />
