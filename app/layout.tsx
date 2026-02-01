@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   description: 'Get funded to trade real-world outcomes. PolyProp runs paid evaluations where traders earn Partner status, receive payouts based on performance, and top performers may be mirrored live.',
   keywords: ['prop firm', 'prediction markets', 'funded trading', 'trading evaluation', 'polymarket', 'event trading'],
   authors: [{ name: 'PolyProp' }],
+  icons: {
+    icon: '/logo_transparent.png',
+  },
   openGraph: {
     title: 'PolyProp | The Prop Firm for Prediction Markets',
     description: 'Get funded to trade real-world outcomes. Prove your edge, become a Partner, earn real payouts.',
@@ -38,9 +41,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <link rel="icon" href="/logo_transparent.png" type="image/png" />
-      </head>
       <body className="min-h-screen font-sans antialiased" suppressHydrationWarning>
         <IntroSplash />
         {children}
