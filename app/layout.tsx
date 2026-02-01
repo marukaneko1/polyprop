@@ -1,6 +1,11 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import { IntroSplash } from '@/components/IntroSplash'
+import dynamic from 'next/dynamic'
+
+// Dynamically import IntroSplash to avoid SSR issues
+const IntroSplash = dynamic(() => import('@/components/IntroSplash').then(mod => ({ default: mod.IntroSplash })), {
+  ssr: false,
+})
 
 export const metadata: Metadata = {
   title: 'PolyProp | The Prop Firm for Prediction Markets',

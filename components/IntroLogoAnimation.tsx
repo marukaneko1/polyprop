@@ -164,35 +164,48 @@ export function IntroLogoAnimation({
   })
 
   useEffect(() => {
+    // Initialize time to 0
+    time.set(0)
+    
     // Animate time from 0 to durationMs
     const startTime = Date.now()
+    let animationFrame: number
+    
     const animate = () => {
       const elapsed = Date.now() - startTime
-      time.set(Math.min(elapsed, durationMs))
+      const currentTime = Math.min(elapsed, durationMs)
+      time.set(currentTime)
       
       if (elapsed < durationMs) {
-        requestAnimationFrame(animate)
+        animationFrame = requestAnimationFrame(animate)
       } else {
         // Animation complete
         setTimeout(() => {
           setIsVisible(false)
           onComplete?.()
-        }, 100)
+        }, 50)
       }
     }
     
-    requestAnimationFrame(animate)
+    animationFrame = requestAnimationFrame(animate)
+    
+    return () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame)
+      }
+    }
   }, [durationMs, time, onComplete])
 
   // Prevent scroll in fullscreen mode
   useEffect(() => {
-    if (mode === 'fullscreen') {
+    if (mode === 'fullscreen' && isVisible) {
+      const originalOverflow = document.body.style.overflow
       document.body.style.overflow = 'hidden'
       return () => {
-        document.body.style.overflow = ''
+        document.body.style.overflow = originalOverflow
       }
     }
-  }, [mode])
+  }, [mode, isVisible])
 
   if (!isVisible && mode === 'fullscreen') {
     return null
