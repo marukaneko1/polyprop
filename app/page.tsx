@@ -3,7 +3,6 @@ import {
   Hero,
   TrustBadges,
   HowItWorks,
-  Features,
   Pricing,
   Rules,
   TerminalSection,
@@ -31,9 +30,6 @@ export default function Home() {
 
         {/* How It Works Timeline */}
         <HowItWorks />
-
-        {/* Core Differentiators Feature Grid */}
-        <Features />
 
         {/* Pricing Section */}
         <Pricing />
