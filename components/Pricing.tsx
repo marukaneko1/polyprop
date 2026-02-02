@@ -17,11 +17,9 @@ export function Pricing() {
   }
 
   const getAddonPrice = (basePrice: number) => {
-    let total = basePrice
-    if (selectedAddons.includes('drawdown-shield')) {
-      total += 40
-    }
-    return total
+    // Both addons have variable pricing, so just return base price
+    // Actual addon prices would be calculated separately
+    return basePrice
   }
 
   return (
@@ -117,13 +115,12 @@ export function Pricing() {
           {addons.map((addon) => (
             <button
               key={addon.id}
-              onClick={() => addon.price !== null && toggleAddon(addon.id)}
+              onClick={() => toggleAddon(addon.id)}
               className={clsx(
-                'flex items-start gap-3 p-4 rounded-xl border text-left transition-all',
+                'flex items-start gap-3 p-4 rounded-xl border text-left transition-all cursor-pointer',
                 selectedAddons.includes(addon.id)
                   ? 'bg-accent/10 border-accent/30'
-                  : 'bg-surface/50 border-border hover:border-accent/20',
-                addon.price === null && 'cursor-default'
+                  : 'bg-surface/50 border-border hover:border-accent/20'
               )}
             >
               <div

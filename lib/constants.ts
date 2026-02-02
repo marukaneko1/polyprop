@@ -143,7 +143,7 @@ export const addons = [
   {
     id: 'drawdown-shield',
     name: 'Drawdown Shield',
-    price: 40,
+    price: null, // varies
     description: 'Increase trailing drawdown from 8% to 10%',
   },
   {
