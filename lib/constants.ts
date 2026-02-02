@@ -266,7 +266,7 @@ export const footerLinks = {
   ],
   resources: [
     { label: 'University', href: '#university' },
-    { label: 'FAQ', href: '#faq' },
+    { label: 'FAQ', href: '/faq' },
     { label: 'Discord', href: '#' },
   ],
   legal: [
