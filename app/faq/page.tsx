@@ -10,7 +10,19 @@ import { faqs } from '@/lib/constants'
 import { clsx } from 'clsx'
 
 export default function FAQPage() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0)
+  const [openIndices, setOpenIndices] = useState<Set<number>>(new Set([0]))
+
+  const toggleFAQ = (index: number) => {
+    setOpenIndices((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(index)) {
+        newSet.delete(index)
+      } else {
+        newSet.add(index)
+      }
+      return newSet
+    })
+  }
 
   return (
     <>
@@ -39,8 +51,8 @@ export default function FAQPage() {
                 key={faq.question}
                 question={faq.question}
                 answer={faq.answer}
-                isOpen={openIndex === index}
-                onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                isOpen={openIndices.has(index)}
+                onClick={() => toggleFAQ(index)}
               />
             ))}
           </div>
