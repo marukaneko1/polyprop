@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ArrowLeft } from 'lucide-react'
 import { ButtonLink } from '@/components/ui'
+import { Navbar } from '@/components/Navbar'
+import { Footer } from '@/components/Footer'
 import { faqs } from '@/lib/constants'
 import { clsx } from 'clsx'
 
@@ -11,20 +13,22 @@ export default function FAQPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(0)
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border bg-surface/30">
-        <div className="section-container py-6">
-          <ButtonLink href="/" variant="ghost" className="mb-4">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </ButtonLink>
-          <h1 className="text-h1 text-text-primary">Frequently Asked Questions</h1>
-          <p className="text-body-lg text-text-secondary mt-2">
-            Everything you need to know about PolyProp evaluations
-          </p>
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-background pt-20">
+        {/* Header */}
+        <div className="border-b border-border bg-surface/30">
+          <div className="section-container py-6">
+            <ButtonLink href="/" variant="ghost" className="mb-4">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </ButtonLink>
+            <h1 className="text-h1 text-text-primary">Frequently Asked Questions</h1>
+            <p className="text-body-lg text-text-secondary mt-2">
+              Everything you need to know about PolyProp evaluations
+            </p>
+          </div>
         </div>
-      </div>
 
       {/* FAQ Content */}
       <div className="section-container section-padding">
@@ -42,7 +46,8 @@ export default function FAQPage() {
           </div>
         </div>
       </div>
-    </div>
+      <Footer />
+    </>
   )
 }
 
