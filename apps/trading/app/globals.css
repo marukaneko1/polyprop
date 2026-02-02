@@ -1,0 +1,301 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #0a0a0b;
+    --surface: #111113;
+    --surface-elevated: #18181b;
+    --panel: #0d0d0f;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-text-primary;
+    font-feature-settings: "rlig" 1, "calt" 1, "tnum" 1;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border/50 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-border;
+  }
+
+  /* Focus states */
+  :focus-visible {
+    @apply outline-none ring-1 ring-accent/50;
+  }
+
+  /* Input number arrows removal */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
+@layer components {
+  /* Layout */
+  .trading-layout {
+    @apply h-screen flex flex-col overflow-hidden;
+  }
+
+  .trading-header {
+    @apply h-12 flex-shrink-0 border-b border-border bg-surface/80 backdrop-blur-sm;
+  }
+
+  .trading-main {
+    @apply flex-1 flex overflow-hidden;
+  }
+
+  .trading-sidebar {
+    @apply w-64 flex-shrink-0 border-r border-border bg-panel overflow-y-auto;
+  }
+
+  .trading-content {
+    @apply flex-1 flex flex-col overflow-hidden;
+  }
+
+  .trading-panel {
+    @apply bg-panel border border-border;
+  }
+
+  /* Panel sections */
+  .panel-header {
+    @apply px-3 py-2 border-b border-border flex items-center justify-between;
+  }
+
+  .panel-title {
+    @apply text-[11px] font-medium text-text-muted uppercase tracking-wider;
+  }
+
+  .panel-body {
+    @apply p-3;
+  }
+
+  /* Market list items */
+  .market-row {
+    @apply flex items-center justify-between py-2 px-3 hover:bg-surface-elevated/50 cursor-pointer transition-colors text-sm;
+  }
+
+  .market-row.selected {
+    @apply bg-accent/10 border-l-2 border-l-accent;
+  }
+
+  .market-symbol {
+    @apply font-medium text-text-primary;
+  }
+
+  .market-price {
+    @apply font-mono text-text-primary tabular-nums;
+  }
+
+  .market-change {
+    @apply font-mono text-xs tabular-nums;
+  }
+
+  .market-change.positive {
+    @apply text-success;
+  }
+
+  .market-change.negative {
+    @apply text-error;
+  }
+
+  /* Order book */
+  .orderbook-row {
+    @apply relative flex items-center justify-between py-1 px-2 text-xs font-mono cursor-pointer transition-colors;
+  }
+
+  .orderbook-row:hover {
+    @apply bg-surface-elevated/30;
+  }
+
+  .orderbook-bar {
+    @apply absolute inset-y-0 right-0 opacity-20;
+  }
+
+  .orderbook-bar.bid {
+    @apply bg-success;
+  }
+
+  .orderbook-bar.ask {
+    @apply bg-error;
+  }
+
+  .orderbook-price {
+    @apply relative z-10 tabular-nums;
+  }
+
+  .orderbook-price.bid {
+    @apply text-success;
+  }
+
+  .orderbook-price.ask {
+    @apply text-error;
+  }
+
+  .orderbook-size {
+    @apply relative z-10 text-text-muted tabular-nums;
+  }
+
+  /* Order entry */
+  .order-input {
+    @apply w-full bg-surface border border-border rounded px-3 py-2 text-sm font-mono text-text-primary 
+           focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-colors;
+  }
+
+  .order-input-group {
+    @apply flex items-center bg-surface border border-border rounded overflow-hidden;
+  }
+
+  .order-input-group input {
+    @apply flex-1 bg-transparent px-3 py-2 text-sm font-mono text-text-primary outline-none;
+  }
+
+  .order-input-group .suffix {
+    @apply px-3 py-2 bg-surface-elevated text-text-muted text-sm border-l border-border;
+  }
+
+  .order-btn {
+    @apply flex-1 py-2.5 rounded font-medium text-sm transition-all;
+  }
+
+  .order-btn.buy {
+    @apply bg-success/20 text-success border border-success/30 hover:bg-success/30;
+  }
+
+  .order-btn.buy.active {
+    @apply bg-success text-background;
+  }
+
+  .order-btn.sell {
+    @apply bg-error/20 text-error border border-error/30 hover:bg-error/30;
+  }
+
+  .order-btn.sell.active {
+    @apply bg-error text-white;
+  }
+
+  /* Positions table */
+  .positions-table {
+    @apply w-full text-xs;
+  }
+
+  .positions-table th {
+    @apply text-left py-2 px-3 text-text-muted font-medium uppercase tracking-wider border-b border-border bg-surface-elevated/30;
+  }
+
+  .positions-table td {
+    @apply py-2.5 px-3 border-b border-border/50 font-mono;
+  }
+
+  .positions-table tr:hover td {
+    @apply bg-surface-elevated/30;
+  }
+
+  /* Status badges */
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium;
+  }
+
+  .status-badge.connected {
+    @apply bg-success/10 text-success;
+  }
+
+  .status-badge.connected::before {
+    content: '';
+    @apply w-1.5 h-1.5 rounded-full bg-success animate-pulse;
+  }
+
+  /* Tabs */
+  .tab-list {
+    @apply flex border-b border-border;
+  }
+
+  .tab-item {
+    @apply px-4 py-2.5 text-sm text-text-muted hover:text-text-primary transition-colors relative;
+  }
+
+  .tab-item.active {
+    @apply text-text-primary;
+  }
+
+  .tab-item.active::after {
+    content: '';
+    @apply absolute bottom-0 left-0 right-0 h-0.5 bg-accent;
+  }
+
+  .tab-count {
+    @apply ml-1.5 px-1.5 py-0.5 bg-surface-elevated rounded text-xs text-text-muted;
+  }
+
+  /* Risk indicator */
+  .risk-meter {
+    @apply h-1.5 bg-surface-elevated rounded-full overflow-hidden;
+  }
+
+  .risk-meter-fill {
+    @apply h-full rounded-full transition-all duration-500;
+  }
+
+  .risk-meter-fill.safe {
+    @apply bg-success;
+  }
+
+  .risk-meter-fill.warning {
+    @apply bg-warning;
+  }
+
+  .risk-meter-fill.danger {
+    @apply bg-error;
+  }
+
+  /* Utility */
+  .text-mono {
+    @apply font-mono tabular-nums;
+  }
+
+  .divider {
+    @apply h-px bg-border;
+  }
+
+  .divider-vertical {
+    @apply w-px bg-border self-stretch;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

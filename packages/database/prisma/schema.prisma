@@ -1,0 +1,982 @@
+// ============================================================================
+// PolyProp Database Schema
+// Complete database design for the prediction market prop firm platform
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum UserRole {
+  USER
+  SUPPORT
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AccountStatus {
+  PENDING // Payment processing
+  ACTIVE // Currently trading
+  PASSED // Completed both stages, pending KYC
+  PARTNER // KYC verified, can request payouts
+  BREACHED // Failed evaluation
+  EXPIRED // Subscription lapsed
+  SUSPENDED // Admin suspended
+}
+
+enum AccountTier {
+  TIER_10K
+  TIER_50K
+  TIER_75K
+  TIER_100K
+  TIER_150K
+}
+
+enum BreachType {
+  DRAWDOWN // Hit trailing drawdown limit
+  CONSISTENCY // Single event > 40% of profit
+  SUBSCRIPTION // Payment failed
+  MANUAL // Admin action
+  FRAUD // Fraudulent activity detected
+}
+
+enum TradeSide {
+  BUY
+  SELL
+}
+
+enum TradeStatus {
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+  PAUSED
+}
+
+enum TransactionType {
+  SUBSCRIPTION
+  ADDON
+  REFUND
+  ADJUSTMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum KycStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  RESUBMIT
+  EXPIRED
+}
+
+enum KycDocumentType {
+  ID_FRONT
+  ID_BACK
+  PASSPORT
+  PROOF_OF_ADDRESS
+  SELFIE
+}
+
+enum PayoutMethod {
+  BANK_TRANSFER
+  PAYPAL
+  CRYPTO_USDC
+  CRYPTO_USDT
+  WISE
+}
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  PROCESSING
+  COMPLETED
+  REJECTED
+  FAILED
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  SYSTEM
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ON_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+// ============================================================================
+// USERS & AUTHENTICATION
+// ============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  passwordHash  String?
+
+  // Profile
+  name      String?
+  phone     String?
+  avatarUrl String?
+  timezone  String  @default("UTC")
+
+  // Status
+  status UserStatus @default(ACTIVE)
+  role   UserRole   @default(USER)
+
+  // Preferences
+  emailNotifications Boolean @default(true)
+  marketingEmails    Boolean @default(false)
+
+  // Timestamps
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  sessions        Session[]
+  oauthAccounts   OAuthAccount[]
+  accounts        Account[]
+  subscriptions   Subscription[]
+  transactions    Transaction[]
+  kycVerification KycVerification?
+  payoutRequests  PayoutRequest[]
+  payoutMethods   PayoutMethod_[]
+  notifications   Notification[]
+  supportTickets  SupportTicket[]
+  ticketMessages  TicketMessage[]
+
+  // Admin relations
+  adminAuditLogs       AdminAuditLog[] @relation("AuditAdmin")
+  reviewedPayouts      PayoutRequest[] @relation("PayoutReviewer")
+  assignedTickets      SupportTicket[] @relation("TicketAssignee")
+  createdAnnouncements Announcement[]
+
+  @@index([email])
+  @@index([status])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  refreshToken String?  @unique
+  expiresAt    DateTime
+
+  // Device info
+  ipAddress  String?
+  userAgent  String?
+  deviceType String?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("sessions")
+}
+
+model OAuthAccount {
+  id           String    @id @default(cuid())
+  userId       String
+  provider     String // google, discord, apple
+  providerId   String
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@map("email_verification_tokens")
+}
+
+// ============================================================================
+// EVALUATION ACCOUNTS
+// ============================================================================
+
+model Account {
+  id            String @id @default(cuid())
+  userId        String
+  accountNumber Int    @unique @default(autoincrement())
+
+  // Tier Configuration
+  tier            AccountTier
+  startingBalance Decimal     @db.Decimal(15, 2)
+
+  // Current State
+  balance       Decimal       @db.Decimal(15, 2)
+  highWaterMark Decimal       @db.Decimal(15, 2)
+  unrealizedPnl Decimal       @default(0) @db.Decimal(15, 2)
+  stage         Int           @default(1) // 1, 2, or null when passed
+  status        AccountStatus @default(PENDING)
+
+  // Rule Configuration
+  drawdownLimit    Decimal @default(0.08) @db.Decimal(5, 4) // 8% or 10%
+  profitTarget1    Decimal @default(0.15) @db.Decimal(5, 4) // 15%
+  profitTarget2    Decimal @default(0.10) @db.Decimal(5, 4) // 10%
+  consistencyLimit Decimal @default(0.40) @db.Decimal(5, 4) // 40%
+  minContracts     Int     @default(10)
+
+  // Add-ons
+  hasDrawdownShield Boolean @default(false)
+  hasExpressPass    Boolean @default(false)
+
+  // Progress Tracking
+  totalProfit     Decimal @default(0) @db.Decimal(15, 2)
+  totalLoss       Decimal @default(0) @db.Decimal(15, 2)
+  totalTrades     Int     @default(0)
+  uniqueContracts Int     @default(0)
+  winningTrades   Int     @default(0)
+  losingTrades    Int     @default(0)
+
+  // Breach Information
+  breachType   BreachType?
+  breachReason String?
+  breachedAt   DateTime?
+
+  // Important Timestamps
+  activatedAt     DateTime?
+  stage2StartedAt DateTime?
+  passedAt        DateTime?
+  partnerAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription   Subscription?
+  trades         Trade[]
+  positions      Position[]
+  snapshots      AccountSnapshot[]
+  payoutRequests PayoutRequest[]
+  ruleViolations RuleViolation[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([accountNumber])
+  @@map("accounts")
+}
+
+model AccountSnapshot {
+  id        String @id @default(cuid())
+  accountId String
+
+  // Snapshot Data
+  balance       Decimal @db.Decimal(15, 2)
+  equity        Decimal @db.Decimal(15, 2)
+  highWaterMark Decimal @db.Decimal(15, 2)
+  drawdownUsed  Decimal @db.Decimal(5, 4)
+  drawdownFloor Decimal @db.Decimal(15, 2)
+
+  // Progress
+  profitTarget    Decimal @db.Decimal(5, 4)
+  currentProgress Decimal @db.Decimal(5, 4)
+
+  // Consistency tracking
+  maxEventProfit Decimal @default(0) @db.Decimal(5, 4)
+
+  snapshotDate DateTime @db.Date
+  createdAt    DateTime @default(now())
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, snapshotDate])
+  @@index([accountId])
+  @@index([snapshotDate])
+  @@map("account_snapshots")
+}
+
+model RuleViolation {
+  id        String @id @default(cuid())
+  accountId String
+
+  ruleType String // drawdown, consistency, contracts, etc.
+  severity String // warning, violation, breach
+  details  Json
+
+  createdAt DateTime @default(now())
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@map("rule_violations")
+}
+
+// ============================================================================
+// TRADING
+// ============================================================================
+
+model Market {
+  id         String @id @default(cuid())
+  externalId String @unique // ID from data provider
+
+  // Market Info
+  name        String
+  description String?
+  category    String?
+  imageUrl    String?
+
+  // Pricing
+  currentPrice  Decimal  @db.Decimal(15, 6)
+  previousClose Decimal? @db.Decimal(15, 6)
+  change24h     Decimal? @db.Decimal(10, 4)
+
+  // Volume & Liquidity
+  volume24h   Decimal @default(0) @db.Decimal(20, 2)
+  totalVolume Decimal @default(0) @db.Decimal(20, 2)
+  liquidity   Decimal @default(0) @db.Decimal(20, 2)
+
+  // Qualification
+  isQualified Boolean   @default(false) // >$500k volume
+  qualifiedAt DateTime?
+
+  // Resolution
+  resolutionDate DateTime?
+  resolvedPrice  Decimal?  @db.Decimal(15, 6)
+  isResolved     Boolean   @default(false)
+
+  // Status
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  trades             Trade[]
+  positions          Position[]
+  orderBookSnapshots OrderBookSnapshot[]
+
+  @@index([externalId])
+  @@index([isQualified])
+  @@index([isActive])
+  @@map("markets")
+}
+
+model OrderBookSnapshot {
+  id       String @id @default(cuid())
+  marketId String
+
+  // Order book data
+  bids     Json // Array of {price, size}
+  asks     Json // Array of {price, size}
+  spread   Decimal @db.Decimal(10, 6)
+  midPrice Decimal @db.Decimal(15, 6)
+
+  timestamp DateTime @default(now())
+
+  market Market @relation(fields: [marketId], references: [id], onDelete: Cascade)
+
+  @@index([marketId])
+  @@index([timestamp])
+  @@map("order_book_snapshots")
+}
+
+model Trade {
+  id        String @id @default(cuid())
+  accountId String
+  marketId  String
+
+  // Trade Details
+  side     TradeSide
+  quantity Decimal   @db.Decimal(15, 4)
+
+  // Prices
+  requestedPrice Decimal  @db.Decimal(15, 6) // What user clicked
+  entryPrice     Decimal  @db.Decimal(15, 6) // Actual fill (Liquidity Guard)
+  exitPrice      Decimal? @db.Decimal(15, 6)
+
+  // Liquidity Guard Details
+  estimatedFill     Decimal @db.Decimal(15, 6)
+  actualSlippage    Decimal @db.Decimal(10, 6)
+  liquidityConsumed Decimal @db.Decimal(10, 6)
+  orderBookDepth    Json? // Snapshot at time of trade
+
+  // P&L
+  realizedPnl Decimal? @db.Decimal(15, 2)
+  fees        Decimal  @default(0) @db.Decimal(15, 2)
+
+  // Status
+  status TradeStatus @default(OPEN)
+
+  // Timestamps
+  closedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  market  Market  @relation(fields: [marketId], references: [id])
+
+  @@index([accountId])
+  @@index([marketId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("trades")
+}
+
+model Position {
+  id        String @id @default(cuid())
+  accountId String
+  marketId  String
+
+  // Position Details
+  side          TradeSide
+  quantity      Decimal   @db.Decimal(15, 4)
+  avgEntryPrice Decimal   @db.Decimal(15, 6)
+
+  // Current State
+  currentPrice  Decimal @db.Decimal(15, 6)
+  unrealizedPnl Decimal @db.Decimal(15, 2)
+
+  // Tracking
+  totalBought Decimal @default(0) @db.Decimal(15, 4)
+  totalSold   Decimal @default(0) @db.Decimal(15, 4)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  market  Market  @relation(fields: [marketId], references: [id])
+
+  @@unique([accountId, marketId])
+  @@index([accountId])
+  @@map("positions")
+}
+
+// ============================================================================
+// PAYMENTS & SUBSCRIPTIONS
+// ============================================================================
+
+model Subscription {
+  id        String @id @default(cuid())
+  userId    String
+  accountId String @unique
+
+  // Stripe IDs
+  stripeSubscriptionId String? @unique
+  stripeCustomerId     String?
+  stripePriceId        String?
+
+  // Subscription Details
+  tier        AccountTier
+  priceAmount Decimal     @db.Decimal(10, 2)
+  currency    String      @default("USD")
+
+  // Add-on purchases
+  drawdownShieldPurchased Boolean @default(false)
+  expressPassPurchased    Boolean @default(false)
+
+  // Status
+  status SubscriptionStatus @default(ACTIVE)
+
+  // Billing Period
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+
+  // Cancellation
+  cancelAtPeriodEnd Boolean   @default(false)
+  cancelledAt       DateTime?
+  cancelReason      String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account      Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([userId])
+  @@index([stripeSubscriptionId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+model Transaction {
+  id             String  @id @default(cuid())
+  userId         String
+  subscriptionId String?
+
+  // Stripe IDs
+  stripePaymentIntentId String?
+  stripeInvoiceId       String?
+  stripeChargeId        String?
+
+  // Transaction Details
+  type     TransactionType
+  amount   Decimal           @db.Decimal(10, 2)
+  currency String            @default("USD")
+  status   TransactionStatus
+
+  // Details
+  description String?
+  metadata    Json?
+
+  // Refund info (if applicable)
+  refundedAmount Decimal?  @db.Decimal(10, 2)
+  refundedAt     DateTime?
+  refundReason   String?
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@index([stripePaymentIntentId])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+// ============================================================================
+// KYC & COMPLIANCE
+// ============================================================================
+
+model KycVerification {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  // Provider Info
+  provider   String? // onfido, veriff, jumio
+  providerId String?
+
+  // Status
+  status KycStatus @default(NOT_STARTED)
+
+  // Personal Information
+  firstName   String?
+  lastName    String?
+  dateOfBirth DateTime?
+  nationality String?
+
+  // Address
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  postalCode   String?
+  country      String?
+
+  // Verification Results
+  idVerified      Boolean @default(false)
+  addressVerified Boolean @default(false)
+  selfieVerified  Boolean @default(false)
+
+  // Risk Assessment
+  riskScore  Int?
+  pep        Boolean @default(false) // Politically Exposed Person
+  sanctioned Boolean @default(false)
+
+  // Rejection
+  rejectionReason  String?
+  rejectionDetails Json?
+
+  // Timestamps
+  submittedAt DateTime?
+  approvedAt  DateTime?
+  rejectedAt  DateTime?
+  expiresAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents KycDocument[]
+
+  @@map("kyc_verifications")
+}
+
+model KycDocument {
+  id                String @id @default(cuid())
+  kycVerificationId String
+
+  // Document Info
+  type     KycDocumentType
+  fileName String
+  fileUrl  String
+  fileSize Int?
+  mimeType String?
+
+  // Verification
+  verificationResult String? // passed, failed, unclear
+  verificationNotes  String?
+  confidence         Decimal? @db.Decimal(5, 4)
+
+  // Timestamps
+  uploadedAt DateTime  @default(now())
+  verifiedAt DateTime?
+
+  // Relations
+  kycVerification KycVerification @relation(fields: [kycVerificationId], references: [id], onDelete: Cascade)
+
+  @@index([kycVerificationId])
+  @@map("kyc_documents")
+}
+
+model FraudFlag {
+  id     String @id @default(cuid())
+  userId String
+
+  flagType String // duplicate_ip, duplicate_device, suspicious_trading, etc.
+  severity String // low, medium, high, critical
+  details  Json
+
+  resolved   Boolean   @default(false)
+  resolvedBy String?
+  resolvedAt DateTime?
+  resolution String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([flagType])
+  @@map("fraud_flags")
+}
+
+// ============================================================================
+// PAYOUTS
+// ============================================================================
+
+model PayoutRequest {
+  id        String @id @default(cuid())
+  userId    String
+  accountId String
+
+  // Amounts
+  grossAmount   Decimal @db.Decimal(15, 2)
+  platformFee   Decimal @db.Decimal(15, 2) // 20% default
+  processingFee Decimal @default(0) @db.Decimal(15, 2)
+  netAmount     Decimal @db.Decimal(15, 2)
+  currency      String  @default("USD")
+
+  // Payout Method
+  payoutMethodId String?
+  payoutMethod   PayoutMethod
+  payoutDetails  Json // Bank account, PayPal email, wallet address
+
+  // Status
+  status PayoutStatus @default(PENDING)
+
+  // Review
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  rejectionReason String?
+
+  // Processing
+  processedAt     DateTime?
+  externalRef     String? // Wise transfer ID, etc.
+  confirmationUrl String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account  Account        @relation(fields: [accountId], references: [id])
+  reviewer User?          @relation("PayoutReviewer", fields: [reviewedBy], references: [id])
+  method   PayoutMethod_? @relation(fields: [payoutMethodId], references: [id])
+
+  @@index([userId])
+  @@index([accountId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payout_requests")
+}
+
+// Named PayoutMethod_ to avoid conflict with enum
+model PayoutMethod_ {
+  id     String @id @default(cuid())
+  userId String
+
+  type       PayoutMethod
+  isDefault  Boolean      @default(false)
+  isVerified Boolean      @default(false)
+
+  // Details stored as JSON for flexibility
+  details Json
+  // Bank: { bankName, accountNumber, routingNumber, swift, iban, accountHolderName }
+  // PayPal: { email }
+  // Crypto: { walletAddress, network }
+
+  // Verification
+  verifiedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payouts PayoutRequest[]
+
+  @@index([userId])
+  @@map("payout_methods")
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+
+  type    NotificationType
+  title   String
+  message String
+  link    String?
+
+  read   Boolean   @default(false)
+  readAt DateTime?
+
+  metadata Json?
+
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model Announcement {
+  id String @id @default(cuid())
+
+  title   String
+  content String
+  type    String @default("info") // info, warning, maintenance, feature
+
+  isActive Boolean @default(true)
+  isPinned Boolean @default(false)
+
+  startsAt DateTime?
+  endsAt   DateTime?
+
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creator User @relation(fields: [createdBy], references: [id])
+
+  @@index([isActive])
+  @@map("announcements")
+}
+
+// ============================================================================
+// SUPPORT
+// ============================================================================
+
+model SupportTicket {
+  id           String @id @default(cuid())
+  userId       String
+  ticketNumber Int    @unique @default(autoincrement())
+
+  subject     String
+  description String
+  category    String? // account, trading, payment, technical, other
+  priority    TicketPriority @default(NORMAL)
+  status      TicketStatus   @default(OPEN)
+
+  assignedTo String?
+
+  resolvedAt DateTime?
+  resolution String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignee User?           @relation("TicketAssignee", fields: [assignedTo], references: [id])
+  messages TicketMessage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([assignedTo])
+  @@map("support_tickets")
+}
+
+model TicketMessage {
+  id       String @id @default(cuid())
+  ticketId String
+  userId   String
+
+  message    String
+  isInternal Boolean @default(false) // Internal notes not visible to user
+
+  attachments Json? // Array of file URLs
+
+  createdAt DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id])
+
+  @@index([ticketId])
+  @@map("ticket_messages")
+}
+
+// ============================================================================
+// ADMIN & AUDIT
+// ============================================================================
+
+model AdminAuditLog {
+  id      String @id @default(cuid())
+  adminId String
+
+  action     String // user.update, account.breach, payout.approve, etc.
+  entityType String? // user, account, payout, etc.
+  entityId   String?
+
+  // What changed
+  changes Json? // { before: {...}, after: {...} }
+
+  // Request info
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  admin User @relation("AuditAdmin", fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("admin_audit_logs")
+}
+
+model SystemSetting {
+  id          String  @id @default(cuid())
+  key         String  @unique
+  value       Json
+  description String?
+
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+// ============================================================================
+// ANALYTICS (Optional - for internal tracking)
+// ============================================================================
+
+model DailyStats {
+  id   String   @id @default(cuid())
+  date DateTime @unique @db.Date
+
+  // User stats
+  newUsers    Int @default(0)
+  activeUsers Int @default(0)
+
+  // Account stats
+  newAccounts      Int @default(0)
+  activeAccounts   Int @default(0)
+  breachedAccounts Int @default(0)
+  passedAccounts   Int @default(0)
+
+  // Trading stats
+  totalTrades Int     @default(0)
+  totalVolume Decimal @default(0) @db.Decimal(20, 2)
+
+  // Revenue stats
+  newSubscriptions Int     @default(0)
+  churned          Int     @default(0)
+  revenue          Decimal @default(0) @db.Decimal(15, 2)
+
+  // Payouts
+  payoutsRequested Decimal @default(0) @db.Decimal(15, 2)
+  payoutsProcessed Decimal @default(0) @db.Decimal(15, 2)
+
+  createdAt DateTime @default(now())
+
+  @@index([date])
+  @@map("daily_stats")
+}
+
+// ============================================================================
+// INDEXES NOTE
+// ============================================================================
+// Additional composite indexes can be added based on query patterns:
+// - accounts: (userId, status) for "my active accounts"
+// - trades: (accountId, status, createdAt) for "recent open trades"
+// - transactions: (userId, createdAt) for "recent payments"

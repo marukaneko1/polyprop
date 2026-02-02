@@ -39,3 +39,5 @@ next-env.d.ts
 
 # Testing
 coverage
+
+/lib/generated/prisma
