@@ -2,14 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { 
-  fetchEvents, 
   fetchMarkets, 
   fetchOrderBook, 
   fetchPrice,
   transformMarket,
   WS_URL,
   type PolymarketMarket,
-  type PolymarketEvent,
   type OrderBook 
 } from './polymarket'
 
