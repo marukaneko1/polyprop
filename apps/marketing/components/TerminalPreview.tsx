@@ -241,7 +241,7 @@ function FullTerminal({ className }: { className?: string }) {
     ],
   }
 
-  const currentMarket = markets[selectedMarket] ?? markets[0]
+  const currentMarket = markets[selectedMarket]!
   const estimatedCost = (shares * currentMarket.price).toFixed(2)
   const fillPrice = (currentMarket.price * 1.0007).toFixed(4)
   const slippage = ((parseFloat(fillPrice) / currentMarket.price - 1) * 100).toFixed(2)
