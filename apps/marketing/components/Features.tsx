@@ -25,6 +25,7 @@ export function Features() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
         {features.map((feature, index) => {
           const Icon = iconMap[feature.icon]
+          if (!Icon) return null
           return (
             <motion.div
               key={feature.title}

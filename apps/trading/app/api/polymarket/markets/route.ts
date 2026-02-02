@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 const GAMMA_API = 'https://gamma-api.polymarket.com'
 
 export async function GET(request: NextRequest) {

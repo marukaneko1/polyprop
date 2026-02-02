@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 const CLOB_API = 'https://clob.polymarket.com'
 
 export async function GET(request: NextRequest) {
