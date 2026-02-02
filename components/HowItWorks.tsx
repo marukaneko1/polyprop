@@ -11,8 +11,8 @@ export function HowItWorks() {
   return (
     <Section id="how-it-works" background="gradient">
       <SectionHeader
-        title="How It Works"
-        subtitle="Three steps to becoming a funded prediction market trader"
+        title="Start trading"
+        subtitle="Break it down into 3 simple steps"
       />
 
       <div className="relative">

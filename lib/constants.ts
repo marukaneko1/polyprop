@@ -20,32 +20,32 @@ export const trustBadges = [
 export const steps = [
   {
     step: 1,
-    title: 'Buy an Evaluation Account',
-    description: 'Choose your account size and start your funded trader journey.',
+    title: 'Choose Your Account',
+    description: 'Select an evaluation tier that matches your trading goals.',
     bullets: [
-      'Select from $10k to $150k evaluation tiers',
-      'Monthly subscription keeps your account active',
-      'Access the full PolyProp terminal immediately',
+      'Pick from $10k to $150k account sizes',
+      'Start with a monthly subscription',
+      'Get instant access to the trading terminal',
     ],
   },
   {
     step: 2,
-    title: 'Trade with Liquidity Guard + Risk Rules',
-    description: 'Prove your skill with institutional-grade execution simulation.',
+    title: 'Trade & Hit Targets',
+    description: 'Execute trades with real market data and prove your edge.',
     bullets: [
-      'Liquidity Guard uses real order book depth for fills',
-      'Hit 15% profit target in Stage 1, 10% in Stage 2',
-      'Stay within 8% trailing drawdown at all times',
+      'Trade on high-liquidity prediction markets',
+      'Reach 15% profit in Stage 1, then 10% in Stage 2',
+      'Manage risk with 8% trailing drawdown protection',
     ],
   },
   {
     step: 3,
-    title: 'Become a Partner',
-    description: 'Earn payouts based on performance with optional live mirroring.',
+    title: 'Get Funded & Earn',
+    description: 'Unlock Partner status and start earning real payouts.',
     bullets: [
-      'Pass both stages to unlock Partner status',
-      'Withdraw profits after KYC verification',
-      'Top performers may be selected for live mirroring',
+      'Complete both evaluation stages',
+      'Verify your identity for payouts',
+      'Withdraw profits and potentially get mirrored',
     ],
   },
 ] as const
