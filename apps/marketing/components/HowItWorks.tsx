@@ -22,6 +22,7 @@ export function HowItWorks() {
         <div className="grid gap-12 lg:gap-0">
           {steps.map((step, index) => {
             const Icon = icons[index]
+            if (!Icon) return null
             const isEven = index % 2 === 1
 
             return (
