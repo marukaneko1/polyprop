@@ -40,8 +40,7 @@ export function Hero() {
               className="mt-6 text-body-lg text-text-secondary max-w-xl"
             >
               Paid evaluations with institutional-grade execution. Hit your targets, 
-              earn Partner status, and receive real payouts. Top performers may be 
-              mirrored on live capital.
+              earn Partner status, and receive real payouts.
             </motion.p>
 
             <motion.div
