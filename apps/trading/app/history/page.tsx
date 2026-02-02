@@ -80,7 +80,7 @@ export default function HistoryPage() {
   }
 
   const exportToCSV = () => {
-    const headers = ['Date', 'Time', 'Symbol', 'Name', 'Side', 'Size', 'Entry Price', 'Exit Price', 'P&L']
+    const headers = ['Date', 'Time', 'Symbol', 'Name', 'Side', 'Size', 'Price', 'Total', 'P&L', 'P&L %']
     const rows = filteredTrades.map(trade => [
       trade.date,
       trade.time,
@@ -89,8 +89,9 @@ export default function HistoryPage() {
       trade.side,
       trade.size,
       trade.price.toFixed(3),
-      trade.exitPrice.toFixed(3),
-      trade.pnl.toFixed(2)
+      trade.total.toFixed(2),
+      trade.pnl.toFixed(2),
+      trade.pnlPercent.toFixed(2)
     ])
 
     const csvContent = [
