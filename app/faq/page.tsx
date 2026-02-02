@@ -2,46 +2,47 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, ArrowRight } from 'lucide-react'
-import { Section, SectionHeader, ButtonLink } from '@/components/ui'
+import { ChevronDown, ArrowLeft } from 'lucide-react'
+import { ButtonLink } from '@/components/ui'
 import { faqs } from '@/lib/constants'
 import { clsx } from 'clsx'
 
-export function FAQ() {
+export default function FAQPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(0)
-  
-  // Only show first 4 FAQs
-  const displayedFaqs = faqs.slice(0, 4)
 
   return (
-    <Section id="faq" background="gradient">
-      <SectionHeader
-        title="Frequently Asked Questions"
-        subtitle="Everything you need to know about PolyProp evaluations"
-      />
-
-      <div className="max-w-3xl mx-auto">
-        <div className="divide-y divide-border rounded-2xl border border-border overflow-hidden bg-surface/50 backdrop-blur-sm">
-          {displayedFaqs.map((faq, index) => (
-            <FAQItem
-              key={faq.question}
-              question={faq.question}
-              answer={faq.answer}
-              isOpen={openIndex === index}
-              onClick={() => setOpenIndex(openIndex === index ? null : index)}
-            />
-          ))}
-        </div>
-        
-        {/* Read More Button */}
-        <div className="mt-8 text-center">
-          <ButtonLink href="/faq" variant="secondary">
-            Read more
-            <ArrowRight className="w-4 h-4" />
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b border-border bg-surface/30">
+        <div className="section-container py-6">
+          <ButtonLink href="/" variant="ghost" className="mb-4">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Home
           </ButtonLink>
+          <h1 className="text-h1 text-text-primary">Frequently Asked Questions</h1>
+          <p className="text-body-lg text-text-secondary mt-2">
+            Everything you need to know about PolyProp evaluations
+          </p>
         </div>
       </div>
-    </Section>
+
+      {/* FAQ Content */}
+      <div className="section-container section-padding">
+        <div className="max-w-3xl mx-auto">
+          <div className="divide-y divide-border rounded-2xl border border-border overflow-hidden bg-surface/50 backdrop-blur-sm">
+            {faqs.map((faq, index) => (
+              <FAQItem
+                key={faq.question}
+                question={faq.question}
+                answer={faq.answer}
+                isOpen={openIndex === index}
+                onClick={() => setOpenIndex(openIndex === index ? null : index)}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
