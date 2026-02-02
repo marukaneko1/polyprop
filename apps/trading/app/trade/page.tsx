@@ -50,8 +50,9 @@ export default function TradePage() {
 
   // Auto-select first market when loaded
   useEffect(() => {
-    if (markets.length > 0 && !selectedMarketId) {
-      setSelectedMarketId(markets[0].id)
+    const firstMarket = markets[0]
+    if (firstMarket && !selectedMarketId) {
+      setSelectedMarketId(firstMarket.id)
     }
   }, [markets, selectedMarketId])
 
