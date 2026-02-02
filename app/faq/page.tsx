@@ -42,19 +42,20 @@ export default function FAQPage() {
           </div>
         </div>
 
-      {/* FAQ Content */}
-      <div className="section-container section-padding">
-        <div className="max-w-3xl mx-auto">
-          <div className="divide-y divide-border rounded-2xl border border-border overflow-hidden bg-surface/50 backdrop-blur-sm">
-            {faqs.map((faq, index) => (
-              <FAQItem
-                key={faq.question}
-                question={faq.question}
-                answer={faq.answer}
-                isOpen={openIndices.has(index)}
-                onClick={() => toggleFAQ(index)}
-              />
-            ))}
+        {/* FAQ Content */}
+        <div className="section-container section-padding">
+          <div className="max-w-3xl mx-auto">
+            <div className="divide-y divide-border rounded-2xl border border-border overflow-hidden bg-surface/50 backdrop-blur-sm">
+              {faqs.map((faq, index) => (
+                <FAQItem
+                  key={faq.question}
+                  question={faq.question}
+                  answer={faq.answer}
+                  isOpen={openIndices.has(index)}
+                  onClick={() => toggleFAQ(index)}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
