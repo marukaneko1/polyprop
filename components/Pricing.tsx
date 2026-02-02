@@ -200,7 +200,7 @@ export function Pricing() {
                 <tr
                   key={tier.size}
                   className={clsx(
-                    'transition-colors hover:bg-surface/50',
+                    'transition-colors hover:bg-accent/10 hover:border-l-4 hover:border-l-accent cursor-pointer',
                     tier.popular && 'bg-accent/5'
                   )}
                 >
